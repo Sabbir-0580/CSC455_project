@@ -314,65 +314,40 @@
     return `<span class="due-badge" style="background:${bg};color:${fg}">${label}</span>`;
   }
 
-  // Base URL for the API. Since we're serving this HTML file
-  // FROM the same server, a relative path like "/api/tasks"
-  // is enough — the browser fills in http://localhost:3000 itself.
-  const API = "/api/tasks";
-
-  // ---- GET /api/tasks: load the list from the server ----
   async function loadTasks() {
     try {
-      const res = await fetch(API);
-      tasks = await res.json();
+      const res = await window.storage.get("tasks-v1", false);
+      if (res && res.value) tasks = JSON.parse(res.value);
     } catch (e) {
-      console.error("Failed to load tasks:", e);
+      // nothing saved yet
     }
     render();
   }
 
-  // ---- POST /api/tasks: ask the server to create a task ----
-  async function addTask(text, subject, due) {
+  async function saveTasks() {
     try {
-      const res = await fetch(API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, subject, due }),
-      });
-      const newTask = await res.json();
-      tasks.unshift(newTask);
-      render();
+      await window.storage.set("tasks-v1", JSON.stringify(tasks), false);
     } catch (e) {
-      console.error("Failed to add task:", e);
+      // ignore storage errors
     }
   }
 
-  // ---- PATCH /api/tasks/:id: ask the server to flip "done" ----
-  async function toggleDone(id) {
-    const current = tasks.find(t => t.id === id);
-    if (!current) return;
-    try {
-      const res = await fetch(`${API}/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ done: !current.done }),
-      });
-      const updated = await res.json();
-      tasks = tasks.map(t => t.id === id ? updated : t);
-      render();
-    } catch (e) {
-      console.error("Failed to update task:", e);
-    }
+  function addTask(text, subject, due) {
+    tasks.unshift({ id: uid(), text, subject, due, done: false, createdAt: Date.now() });
+    saveTasks();
+    render();
   }
 
-  // ---- DELETE /api/tasks/:id: ask the server to remove it ----
-  async function removeTask(id) {
-    try {
-      await fetch(`${API}/${id}`, { method: "DELETE" });
-      tasks = tasks.filter(t => t.id !== id);
-      render();
-    } catch (e) {
-      console.error("Failed to delete task:", e);
-    }
+  function toggleDone(id) {
+    tasks = tasks.map(t => t.id === id ? { ...t, done: !t.done } : t);
+    saveTasks();
+    render();
+  }
+
+  function removeTask(id) {
+    tasks = tasks.filter(t => t.id !== id);
+    saveTasks();
+    render();
   }
 
   function render() {
