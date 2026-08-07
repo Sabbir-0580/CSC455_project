@@ -49,6 +49,7 @@ def update_task(task_id: int, updated_task: TaskCreate, db: Session = Depends(ge
     task.title = updated_task.title
     task.description = updated_task.description
     task.due_date = updated_task.due_date
+    task.completed = updated_task.completed
 
     db.commit()
     db.refresh(task)

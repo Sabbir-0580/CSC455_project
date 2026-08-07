@@ -10,7 +10,7 @@ class TaskBase(BaseModel):
 
 # Used when the CLIENT sends data to CREATE a new task
 class TaskCreate(TaskBase):
-    pass
+    completed: Optional[bool] = False
 
 # Used when we SEND a task back to the client (includes fields the DB generates)
 class TaskResponse(TaskBase):
